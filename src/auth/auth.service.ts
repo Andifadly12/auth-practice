@@ -1,9 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -44,6 +49,38 @@ export class AuthService {
     return {
       message: 'Register berhasil',
       user,
+    };
+  }
+
+  async login(dto: LoginDto) {
+    const axestingEmail = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+    if (!axestingEmail) {
+      throw new UnauthorizedException('email atau password salah');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      axestingEmail.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('email atau password salah');
+    }
+    const accessToken = await this.jwtService.signAsync({
+      sub: axestingEmail.id,
+      email: axestingEmail.email,
+    });
+
+    return {
+      message: 'login berhasil ',
+      accessToken,
+      axestingEmail: {
+        id: axestingEmail.id,
+        name: axestingEmail.name,
+        email: axestingEmail.email,
+      },
     };
   }
 }
