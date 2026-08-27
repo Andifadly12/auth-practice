@@ -21,14 +21,6 @@ export class AuthService {
       throw new BadRequestException('Email already exists');
     }
 
-    const existingUsername = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (existingUsername) {
-      throw new BadRequestException('Username already exists');
-    }
-
     const passwordHash = await bcrypt.hash(dto.password, 10);
 
     const user = await this.prisma.user.create({
