@@ -9,8 +9,8 @@ export class JWTGruard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const allowedRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
-      context.getHandler,
-      context.getClass,
+      context.getHandler(),
+      context.getClass(),
     ]);
 
     if (!allowedRoles) {
