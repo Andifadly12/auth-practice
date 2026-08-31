@@ -20,15 +20,14 @@ export class ProfileService {
         role: true,
         createdAt: true,
         updatedAt: true,
-      },
-
-      profile: {
-        select: {
-          id: true,
-          bio: true,
-          phone: true,
-          createdAt: true,
-          updatedAt: true,
+        profile: {
+          select: {
+            id: true,
+            bio: true,
+            phone: true,
+            createdAt: true,
+            updatedAt: true,
+          },
         },
       },
     });
