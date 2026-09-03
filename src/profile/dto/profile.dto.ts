@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateDtoProfile {
   @IsNotEmpty()
@@ -8,4 +8,16 @@ export class CreateDtoProfile {
   @IsNotEmpty()
   @IsString()
   phone: string;
+}
+
+export class UpdateDtoProfile {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  bio?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  phone?: string;
 }

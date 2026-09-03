@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateDtoProfile } from './dto/profile.dto';
+import { CreateDtoProfile, UpdateDtoProfile } from '../profile/dto/profile.dto';
 
 @Injectable()
 export class ProfileService {
@@ -71,6 +71,47 @@ export class ProfileService {
 
     return {
       message: 'Profile berhasil disimpan',
+      profile,
+    };
+  }
+
+  async getById(id: string) {
+    const profile = await this.prisma.profile.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: {
+            id: true,
+            username: true,
+            umur: true,
+            email: true,
+            name: true,
+            role: true,
+          },
+        },
+      },
+    });
+
+    if (!profile) {
+      throw new NotFoundException('Profile tidak ditemukan');
+    }
+
+    return {
+      message: 'Profile berhasil diambil',
+      profile,
+    };
+  }
+
+  async update(id: string, dto: UpdateDtoProfile) {
+    await this.getById(id);
+
+    const profile = await this.prisma.profile.update({
+      where: { id },
+      data: dto,
+    });
+
+    return {
+      message: 'Profile berhasil diperbarui',
       profile,
     };
   }
