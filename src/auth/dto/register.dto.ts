@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsString,
@@ -7,6 +8,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { UserRole } from '../../../generated/prisma/enums';
 
 export class RegisterDto {
   @IsNotEmpty()
@@ -23,6 +25,10 @@ export class RegisterDto {
   @IsString()
   @IsEmail({}, { message: 'Invalid email address' })
   email!: string;
+
+  @IsNotEmpty()
+  @IsEnum(UserRole, { message: 'Role harus berupa USER atau ADMIN' })
+  role!: UserRole;
 
   @IsNotEmpty()
   @IsString()

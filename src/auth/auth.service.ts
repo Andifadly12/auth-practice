@@ -35,6 +35,7 @@ export class AuthService {
         email: dto.email,
         name: dto.username,
         passwordHash,
+        role: dto.role,
       },
       select: {
         id: true,
@@ -42,6 +43,7 @@ export class AuthService {
         umur: true,
         name: true,
         email: true,
+        role: true,
         createdAt: true,
       },
     });
