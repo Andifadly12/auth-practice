@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -36,5 +37,10 @@ export class ProfileController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateDtoProfile) {
     return this.profileService.update(id, dto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.profileService.remove(id);
   }
 }

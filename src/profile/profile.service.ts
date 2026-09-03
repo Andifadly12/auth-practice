@@ -115,4 +115,16 @@ export class ProfileService {
       profile,
     };
   }
+
+  async remove(id: string) {
+    await this.getById(id);
+
+    await this.prisma.profile.delete({
+      where: { id },
+    });
+
+    return {
+      message: 'Profile berhasil dihapus',
+    };
+  }
 }
