@@ -1,5 +1,15 @@
-import { Transform, TransformFnParams } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional } from 'class-validator';
+import { Transform, TransformFnParams, Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { TodoPriority, TodoStatus } from '../../../generated/prisma/client';
 
 function parseBoolean(value: unknown): unknown {
@@ -9,6 +19,12 @@ function parseBoolean(value: unknown): unknown {
 }
 
 export class FilterTodoDto {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  title?: string;
+
   @IsOptional()
   @IsEnum(TodoPriority)
   priority?: TodoPriority;
@@ -21,4 +37,17 @@ export class FilterTodoDto {
   @Transform(({ value }: TransformFnParams) => parseBoolean(value))
   @IsBoolean()
   completed?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit: number = 10;
 }

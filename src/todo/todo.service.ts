@@ -28,11 +28,14 @@ export class TodoService {
     });
   }
 
-  findAll(userId: string, filter: FilterTodoDto) {
+  async findAll(userId: string, filter: FilterTodoDto) {
     this.validateCompletedFilter(filter);
 
     const where: Prisma.TodoWhereInput = {
       userId,
+      ...(filter.title && {
+        title: { contains: filter.title, mode: 'insensitive' },
+      }),
       ...(filter.priority && { priority: filter.priority }),
       ...(filter.status && { status: filter.status }),
     };
@@ -43,10 +46,26 @@ export class TodoService {
         : { not: TodoStatus.COMPLETED };
     }
 
-    return this.prisma.todo.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-    });
+    const skip = (filter.page - 1) * filter.limit;
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.todo.findMany({
+        where,
+        orderBy: [{ title: 'asc' }, { createdAt: 'desc' }],
+        skip,
+        take: filter.limit,
+      }),
+      this.prisma.todo.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page: filter.page,
+        limit: filter.limit,
+        totalPages: Math.ceil(total / filter.limit),
+      },
+    };
   }
 
   async findOne(userId: string, id: string) {
