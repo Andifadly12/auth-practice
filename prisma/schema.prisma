@@ -13,6 +13,19 @@ enum UserRole {
   ADMIN
 }
 
+enum TodoStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum TodoPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model User {
   id           String   @id @default(uuid()) @db.Uuid
   username     String   @unique @db.VarChar(20)
@@ -30,16 +43,24 @@ model User {
 }
 
 model Todo {
-  id          String   @id @default(uuid()) @db.Uuid
-  title       String   @db.VarChar(120)
+  id          String       @id @default(uuid()) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  title       String       @db.VarChar(120)
   description String?
-  completed   Boolean  @default(false)
-  userId      String   @map("user_id") @db.Uuid
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  status      TodoStatus   @default(TODO)
+  priority    TodoPriority @default(MEDIUM)
+  dueAt       DateTime?    @map("due_at")
+  reminderAt  DateTime?    @map("reminder_at")
+  completedAt DateTime?    @map("completed_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([userId])
+  @@index([userId, status])
+  @@index([userId, dueAt])
   @@map("todos")
 }
 
