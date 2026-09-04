@@ -27,17 +27,18 @@ enum TodoPriority {
 }
 
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  username     String   @unique @db.VarChar(20)
+  id           String     @id @default(uuid()) @db.Uuid
+  username     String     @unique @db.VarChar(20)
   umur         Int
-  email        String   @unique
+  email        String     @unique
   name         String?
-  passwordHash String   @map("password_hash")
-  role         UserRole @default(USER)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(USER)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
   profile      Profile?
   todos        Todo[]
+  categories   Category[]
 
   @@map("users")
 }
@@ -55,8 +56,10 @@ model Todo {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?   @db.Uuid
 
   @@index([userId])
   @@index([userId, status])
@@ -76,4 +79,20 @@ model Profile {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("profiles")
+}
+
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(50)
+  color     String?  @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  todos Todo[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("categories")
 }
