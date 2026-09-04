@@ -2,14 +2,24 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
+import { TodoStatus } from '../../generated/prisma/client';
 
 @Injectable()
 export class TodoService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(userId: string, dto: CreateTodoDto) {
+    const completedAt =
+      dto.status === TodoStatus.COMPLETED && !dto.completedAt
+        ? new Date()
+        : dto.completedAt;
+
     return this.prisma.todo.create({
-      data: { ...dto, userId },
+      data: {
+        ...dto,
+        ...(completedAt !== undefined && { completedAt }),
+        userId,
+      },
     });
   }
 
@@ -35,9 +45,20 @@ export class TodoService {
   async update(userId: string, id: string, dto: UpdateTodoDto) {
     await this.findOne(userId, id);
 
+    let completedAt: string | Date | null | undefined = dto.completedAt;
+
+    if (dto.status === TodoStatus.COMPLETED && !dto.completedAt) {
+      completedAt = new Date();
+    } else if (dto.status && dto.status !== TodoStatus.COMPLETED) {
+      completedAt = null;
+    }
+
     return this.prisma.todo.update({
       where: { id },
-      data: dto,
+      data: {
+        ...dto,
+        ...(completedAt !== undefined && { completedAt }),
+      },
     });
   }
 
