@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma, TodoStatus } from '../../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { FilterTodoDto } from './dto/filter-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
-import { TodoStatus } from '../../generated/prisma/client';
 
 @Injectable()
 export class TodoService {
@@ -23,9 +28,23 @@ export class TodoService {
     });
   }
 
-  findAll(userId: string) {
+  findAll(userId: string, filter: FilterTodoDto) {
+    this.validateCompletedFilter(filter);
+
+    const where: Prisma.TodoWhereInput = {
+      userId,
+      ...(filter.priority && { priority: filter.priority }),
+      ...(filter.status && { status: filter.status }),
+    };
+
+    if (filter.completed !== undefined && !filter.status) {
+      where.status = filter.completed
+        ? TodoStatus.COMPLETED
+        : { not: TodoStatus.COMPLETED };
+    }
+
     return this.prisma.todo.findMany({
-      where: { userId },
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -67,5 +86,17 @@ export class TodoService {
     await this.prisma.todo.delete({ where: { id } });
 
     return { message: 'Todo berhasil dihapus' };
+  }
+
+  private validateCompletedFilter(filter: FilterTodoDto) {
+    if (filter.completed === undefined || !filter.status) return;
+
+    const statusIsCompleted = filter.status === TodoStatus.COMPLETED;
+
+    if (filter.completed !== statusIsCompleted) {
+      throw new BadRequestException(
+        'Filter status dan completed saling bertentangan',
+      );
+    }
   }
 }

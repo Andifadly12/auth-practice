@@ -6,12 +6,14 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { RequestWithUser } from '../auth/interfaces/interficeRequestWithUser';
 import { CreateTodoDto } from './dto/create-todo.dto';
+import { FilterTodoDto } from './dto/filter-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { TodoService } from './todo.service';
 
@@ -26,8 +28,8 @@ export class TodoController {
   }
 
   @Get()
-  findAll(@Req() request: RequestWithUser) {
-    return this.todoService.findAll(request.user!.id);
+  findAll(@Req() request: RequestWithUser, @Query() filter: FilterTodoDto) {
+    return this.todoService.findAll(request.user!.id, filter);
   }
 
   @Get(':id')
