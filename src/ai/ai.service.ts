@@ -9,6 +9,12 @@ import {
 export class AiService {
   constructor(@Inject(AI_PROVIDER) private readonly aiProvider: AiProvider) {}
 
+  async ask(message: string): Promise<{ answer: string }> {
+    const answer = await this.aiProvider.ask(message);
+
+    return { answer };
+  }
+
   async parseTodo(text: string): Promise<{ draft: TodoSuggestion }> {
     const suggestion = await this.aiProvider.parseTodo(text);
 
