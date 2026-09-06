@@ -13,7 +13,8 @@ import { UpdateTodoDto } from './dto/update-todo.dto';
 export class TodoService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(userId: string, dto: CreateTodoDto) {
+  async create(userId: string, dto: CreateTodoDto) {
+    await this.validateCategory(userId, dto.categoryId);
     const completedAt =
       dto.status === TodoStatus.COMPLETED && !dto.completedAt
         ? new Date()
@@ -82,6 +83,7 @@ export class TodoService {
 
   async update(userId: string, id: string, dto: UpdateTodoDto) {
     await this.findOne(userId, id);
+    await this.validateCategory(userId, dto.categoryId);
 
     let completedAt: string | Date | null | undefined = dto.completedAt;
 
@@ -105,6 +107,19 @@ export class TodoService {
     await this.prisma.todo.delete({ where: { id } });
 
     return { message: 'Todo berhasil dihapus' };
+  }
+
+  private async validateCategory(userId: string, categoryId?: string | null) {
+    if (categoryId == null) return;
+    const category = await this.prisma.category.findFirst({
+      where: { id: categoryId, userId },
+      select: { id: true },
+    });
+    if (!category) {
+      throw new BadRequestException(
+        'Kategori tidak ditemukan atau bukan milik Anda',
+      );
+    }
   }
 
   private validateCompletedFilter(filter: FilterTodoDto) {
