@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
 } from 'class-validator';
 import { TodoPriority, TodoStatus } from '../../../generated/prisma/client';
@@ -12,6 +13,10 @@ export class UpdateTodoDto {
   @IsString()
   @MaxLength(120)
   title?: string;
+
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string | null;
 
   @IsOptional()
   @IsString()
