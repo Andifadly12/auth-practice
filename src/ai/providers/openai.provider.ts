@@ -11,6 +11,33 @@ import { AiProvider } from './ai-provider.interface';
 export class OpenAiProvider implements AiProvider {
   private client?: OpenAI;
 
+  async ask(message: string): Promise<string> {
+    const client = this.getClient();
+
+    try {
+      const response = await client.responses.create({
+        model: process.env.OPENAI_MODEL ?? 'gpt-5-mini',
+        store: false,
+        instructions: [
+          'Jawab dalam bahasa Indonesia dengan jelas dan ringkas.',
+          'Bantu menjawab pertanyaan, memberikan saran, memperbaiki kalimat,',
+          'menjelaskan materi, membuat langkah, membagi pekerjaan,',
+          'serta memberi ide kategori dan prioritas Todo.',
+        ].join(' '),
+        input: message,
+        max_output_tokens: 1000,
+      });
+
+      if (!response.output_text) {
+        throw new Error('Respons AI kosong');
+      }
+
+      return response.output_text;
+    } catch {
+      throw new BadGatewayException('Gagal mendapatkan jawaban dari AI');
+    }
+  }
+
   async parseTodo(text: string): Promise<unknown> {
     const client = this.getClient();
 
