@@ -31,14 +31,16 @@ export class TodoService {
 
   async findAll(userId: string, filter: FilterTodoDto) {
     this.validateCompletedFilter(filter);
+    const search = filter.search ?? filter.title;
 
     const where: Prisma.TodoWhereInput = {
       userId,
-      ...(filter.title && {
-        title: { contains: filter.title, mode: 'insensitive' },
+      ...(search && {
+        title: { contains: search, mode: 'insensitive' },
       }),
       ...(filter.priority && { priority: filter.priority }),
       ...(filter.status && { status: filter.status }),
+      ...(filter.categoryId && { categoryId: filter.categoryId }),
     };
 
     if (filter.completed !== undefined && !filter.status) {
