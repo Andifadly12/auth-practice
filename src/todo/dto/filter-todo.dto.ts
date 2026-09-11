@@ -9,6 +9,7 @@ import {
   Max,
   MaxLength,
   Min,
+  IsUUID,
 } from 'class-validator';
 import { TodoPriority, TodoStatus } from '../../../generated/prisma/client';
 
@@ -23,6 +24,12 @@ export class FilterTodoDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(120)
+  search?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
   title?: string;
 
   @IsOptional()
@@ -32,6 +39,10 @@ export class FilterTodoDto {
   @IsOptional()
   @IsEnum(TodoStatus)
   status?: TodoStatus;
+
+  @IsOptional()
+  @IsUUID()
+  categoryId?: string;
 
   @IsOptional()
   @Transform(({ value }: TransformFnParams) => parseBoolean(value))
