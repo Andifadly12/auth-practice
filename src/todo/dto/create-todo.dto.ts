@@ -21,6 +21,7 @@ export class CreateTodoDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   description?: string;
 
   @IsOptional()
