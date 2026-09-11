@@ -40,20 +40,22 @@ model User {
   todos         Todo[]
   categories    Category[]
   refreshTokens RefreshToken[]
+  notifications Notification[]
 
   @@map("users")
 }
 
 model Todo {
-  id          String       @id @default(uuid()) @db.Uuid
-  userId      String       @map("user_id") @db.Uuid
-  title       String       @db.VarChar(120)
-  description String?
-  status      TodoStatus   @default(TODO)
-  priority    TodoPriority @default(MEDIUM)
-  dueAt       DateTime?    @map("due_at")
-  reminderAt  DateTime?    @map("reminder_at")
-  completedAt DateTime?    @map("completed_at")
+  id             String       @id @default(uuid()) @db.Uuid
+  userId         String       @map("user_id") @db.Uuid
+  title          String       @db.VarChar(120)
+  description    String?
+  status         TodoStatus   @default(TODO)
+  priority       TodoPriority @default(MEDIUM)
+  dueAt          DateTime?    @map("due_at")
+  reminderAt     DateTime?    @map("reminder_at")
+  reminderSentAt DateTime?    @map("reminder_sent_at")
+  completedAt    DateTime?    @map("completed_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -65,6 +67,7 @@ model Todo {
   @@index([userId])
   @@index([userId, status])
   @@index([userId, dueAt])
+  @@index([reminderAt, reminderSentAt])
   @@map("todos")
 }
 
@@ -110,4 +113,27 @@ model RefreshToken {
 
   @@index([userId])
   @@map("refresh_tokens")
+}
+
+enum NotificationType {
+  TODO_REMINDER
+  TODO_DUE
+  SYSTEM
+  AI_SUGGESTION
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String           @db.VarChar(120)
+  message   String
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
 }
