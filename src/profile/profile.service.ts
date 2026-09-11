@@ -1,5 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  ChangePasswordDto,
+  DeleteAccountDto,
+} from './dto/account-security.dto';
 import { CreateDtoProfile, UpdateDtoProfile } from './dto/profile.dto';
 
 @Injectable()
@@ -126,5 +135,40 @@ export class ProfileService {
     return {
       message: 'Profile berhasil dihapus',
     };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (
+      !user ||
+      !(await bcrypt.compare(dto.currentPassword, user.passwordHash))
+    ) {
+      throw new UnauthorizedException('Password saat ini salah');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    const revokedAt = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt },
+      }),
+    ]);
+
+    return { message: 'Password berhasil diubah. Silakan login kembali' };
+  }
+
+  async deleteAccount(userId: string, dto: DeleteAccountDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !(await bcrypt.compare(dto.password, user.passwordHash))) {
+      throw new UnauthorizedException('Password salah');
+    }
+
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { message: 'Akun berhasil dihapus' };
   }
 }
