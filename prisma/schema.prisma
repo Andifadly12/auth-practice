@@ -26,21 +26,28 @@ enum TodoPriority {
   HIGH
 }
 
+enum AccountTokenType {
+  RESET_PASSWORD
+  EMAIL_VERIFICATION
+}
+
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  username      String         @unique @db.VarChar(20)
-  umur          Int
-  email         String         @unique
-  name          String?
-  passwordHash  String         @map("password_hash")
-  role          UserRole       @default(USER)
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  profile       Profile?
-  todos         Todo[]
-  categories    Category[]
-  refreshTokens RefreshToken[]
-  notifications Notification[]
+  id              String         @id @default(uuid()) @db.Uuid
+  username        String         @unique @db.VarChar(20)
+  umur            Int
+  email           String         @unique
+  name            String?
+  passwordHash    String         @map("password_hash")
+  role            UserRole       @default(USER)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  profile         Profile?
+  todos           Todo[]
+  categories      Category[]
+  refreshTokens   RefreshToken[]
+  notifications   Notification[]
+  accountTokens   AccountToken[]
+  emailVerifiedAt DateTime?      @map("email_verified_at")
 
   @@map("users")
 }
@@ -136,4 +143,20 @@ model Notification {
 
   @@index([userId, isRead])
   @@map("notifications")
+}
+
+model AccountToken {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      AccountTokenType
+  tokenHash String           @unique @map("token_hash")
+  expiresAt DateTime         @map("expires_at")
+  usedAt    DateTime?        @map("used_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  @@index([expiresAt])
+  @@map("account_tokens")
 }
