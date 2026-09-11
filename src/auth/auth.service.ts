@@ -5,12 +5,18 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { jwtConstants } from './constants';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ResendVerificationDto,
+  VerifyEmailDto,
+} from './dto/account-recovery.dto';
 
 interface RefreshTokenPayload {
   sub: string;
@@ -58,9 +64,16 @@ export class AuthService {
       },
     });
 
+    const verificationToken = await this.issueAccountToken(
+      user.id,
+      'EMAIL_VERIFICATION',
+      24 * 60 * 60 * 1000,
+    );
+
     return {
       message: 'Register berhasil',
       user,
+      ...this.developmentToken('verificationToken', verificationToken),
     };
   }
 
@@ -172,6 +185,94 @@ export class AuthService {
     return { message: 'Logout dari semua perangkat berhasil' };
   }
 
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      select: { id: true },
+    });
+    let resetToken: string | undefined;
+
+    if (user) {
+      resetToken = await this.issueAccountToken(
+        user.id,
+        'RESET_PASSWORD',
+        60 * 60 * 1000,
+      );
+    }
+
+    return {
+      message: 'Jika email terdaftar, instruksi reset password telah dibuat',
+      ...(resetToken ? this.developmentToken('resetToken', resetToken) : {}),
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const token = await this.findValidAccountToken(dto.token, 'RESET_PASSWORD');
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    const usedAt = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: token.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.accountToken.update({
+        where: { id: token.id },
+        data: { usedAt },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: token.userId, revokedAt: null },
+        data: { revokedAt: usedAt },
+      }),
+    ]);
+
+    return { message: 'Password berhasil direset' };
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const token = await this.findValidAccountToken(
+      dto.token,
+      'EMAIL_VERIFICATION',
+    );
+    const usedAt = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: token.userId },
+        data: { emailVerifiedAt: usedAt },
+      }),
+      this.prisma.accountToken.update({
+        where: { id: token.id },
+        data: { usedAt },
+      }),
+    ]);
+
+    return { message: 'Email berhasil diverifikasi' };
+  }
+
+  async resendVerification(dto: ResendVerificationDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      select: { id: true, emailVerifiedAt: true },
+    });
+    let verificationToken: string | undefined;
+
+    if (user && !user.emailVerifiedAt) {
+      verificationToken = await this.issueAccountToken(
+        user.id,
+        'EMAIL_VERIFICATION',
+        24 * 60 * 60 * 1000,
+      );
+    }
+
+    return {
+      message: 'Jika email memenuhi syarat, token verifikasi telah dibuat',
+      ...(verificationToken
+        ? this.developmentToken('verificationToken', verificationToken)
+        : {}),
+    };
+  }
+
   private async issueTokens(user: { id: string; email: string; role: string }) {
     const accessToken = await this.signAccessToken(user);
     const refreshToken = await this.createRefreshToken(user.id);
@@ -228,5 +329,54 @@ export class AuthService {
 
   private hashToken(token: string) {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private async issueAccountToken(
+    userId: string,
+    type: 'RESET_PASSWORD' | 'EMAIL_VERIFICATION',
+    lifetimeMs: number,
+  ) {
+    const value = randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(value);
+
+    await this.prisma.$transaction([
+      this.prisma.accountToken.deleteMany({
+        where: { userId, type, usedAt: null },
+      }),
+      this.prisma.accountToken.create({
+        data: {
+          userId,
+          type,
+          tokenHash,
+          expiresAt: new Date(Date.now() + lifetimeMs),
+        },
+      }),
+    ]);
+
+    return value;
+  }
+
+  private async findValidAccountToken(
+    value: string,
+    type: 'RESET_PASSWORD' | 'EMAIL_VERIFICATION',
+  ) {
+    const token = await this.prisma.accountToken.findFirst({
+      where: {
+        tokenHash: this.hashToken(value),
+        type,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    if (!token) {
+      throw new BadRequestException('Token tidak valid atau kedaluwarsa');
+    }
+
+    return token;
+  }
+
+  private developmentToken(key: string, value: string) {
+    return process.env.NODE_ENV === 'production' ? {} : { [key]: value };
   }
 }
