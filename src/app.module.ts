@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { CategoryModule } from './category/category.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ProfileModule } from './profile/profile.module';
+import { ReminderModule } from './reminder/reminder.module';
 import { TodoModule } from './todo/todo.module';
 
 @Module({
@@ -16,6 +17,7 @@ import { TodoModule } from './todo/todo.module';
     TodoModule,
     CategoryModule,
     AiModule,
+    ReminderModule,
   ],
   controllers: [AppController],
   providers: [AppService],
