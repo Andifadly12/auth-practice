@@ -12,6 +12,10 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { RequestWithUser } from '../auth/interfaces/interficeRequestWithUser';
 import { CreateDtoProfile, UpdateDtoProfile } from './dto/profile.dto';
+import {
+  ChangePasswordDto,
+  DeleteAccountDto,
+} from './dto/account-security.dto';
 import { ProfileService } from './profile.service';
 
 @UseGuards(AuthGuard('jwt'))
@@ -22,6 +26,22 @@ export class ProfileController {
   @Get('me')
   getMyProfile(@Req() request: RequestWithUser) {
     return this.profileService.getMyProfile(request.user!.id);
+  }
+
+  @Patch('password')
+  changePassword(
+    @Req() request: RequestWithUser,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.profileService.changePassword(request.user!.id, dto);
+  }
+
+  @Delete('account')
+  deleteAccount(
+    @Req() request: RequestWithUser,
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.profileService.deleteAccount(request.user!.id, dto);
   }
 
   @Post()
